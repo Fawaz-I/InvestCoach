@@ -10,13 +10,10 @@ function makeQueryClient() {
         // above 0 to avoid refetching immediately on the client
         staleTime: 60 * 1000, // 1 minute
         gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-        retry: (failureCount, error) => {
-          // Don't retry on 4xx errors
-          if (error instanceof Error && error.message.includes('4')) {
-            return false;
-          }
-          // Retry up to 3 times for other errors
-          return failureCount < 3;
+        retry: (_failureCount, error: any) => {
+          const status = error?.status ?? error?.response?.status;
+          if (typeof status === 'number' && status >= 400 && status < 500) return false;
+          return _failureCount < 3;
         },
         refetchOnWindowFocus: false,
         refetchOnMount: true,

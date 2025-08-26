@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Link from 'next/link';
+import type { Route } from 'next';
 import './globals.css';
 import Providers from '@/components/providers';
 
@@ -39,30 +41,30 @@ export default function RootLayout({
                       📈 InvestCoach
                     </h1>
                     <nav className='hidden md:flex space-x-6'>
-                      <a
+                      <Link
                         href='/'
                         className='text-muted-foreground hover:text-foreground transition-colors'
                       >
                         Dashboard
-                      </a>
-                      <a
-                        href='/portfolios'
+                      </Link>
+                      <Link
+                        href={'/portfolios' as Route}
                         className='text-muted-foreground hover:text-foreground transition-colors'
                       >
                         Portfolios
-                      </a>
-                      <a
-                        href='/checklists'
+                      </Link>
+                      <Link
+                        href={'/checklists' as Route}
                         className='text-muted-foreground hover:text-foreground transition-colors'
                       >
                         Checklists
-                      </a>
-                      <a
-                        href='/reports'
+                      </Link>
+                      <Link
+                        href={'/reports' as Route}
                         className='text-muted-foreground hover:text-foreground transition-colors'
                       >
                         Reports
-                      </a>
+                      </Link>
                     </nav>
                   </div>
                   <div className='flex items-center space-x-4'>

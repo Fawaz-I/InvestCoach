@@ -78,19 +78,19 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 -- Create triggers to automatically update updated_at columns
 CREATE TRIGGER update_portfolios_updated_at 
   BEFORE UPDATE ON portfolios 
-  FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_positions_updated_at 
   BEFORE UPDATE ON positions 
-  FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_position_checklist_results_updated_at 
   BEFORE UPDATE ON position_checklist_results 
-  FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reports_updated_at 
   BEFORE UPDATE ON reports 
-  FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Enable Row Level Security (RLS) on all tables
 ALTER TABLE portfolios ENABLE ROW LEVEL SECURITY;
@@ -99,7 +99,18 @@ ALTER TABLE checklists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE position_checklist_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies (for now, allow all operations - can be restricted later with auth)
+-- =================================================================
+-- DEVELOPMENT-ONLY PERMISSIVE POLICIES
+-- =================================================================
+-- WARNING: These policies are permissive and allow unrestricted access
+-- for development convenience. Before production deployment:
+-- 1. Add user_id columns to all tables for proper user scoping
+-- 2. Implement restrictive RLS policies based on authenticated users
+-- 3. Remove these development-only permissive policies
+-- 4. Test that all functionality works with proper user isolation
+-- =================================================================
+
+-- DEVELOPMENT-ONLY: Allow all operations (replace with user-scoped policies before production)
 CREATE POLICY "Allow all operations on portfolios" ON portfolios FOR ALL USING (true);
 CREATE POLICY "Allow all operations on positions" ON positions FOR ALL USING (true);
 CREATE POLICY "Allow all operations on checklists" ON checklists FOR ALL USING (true);

@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
+import { clientEnv, serverEnv } from '@/lib/env';
 
 // Supabase client configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+const supabaseUrl = clientEnv.NEXT_PUBLIC_SUPABASE_URL;
+const supabasePublishableKey = clientEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 // Client-side Supabase client
 export const supabase = createClient<Database>(supabaseUrl, supabasePublishableKey, {
@@ -21,7 +22,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabasePublishableK
 
 // Server-side Supabase client with secret key
 export function createServerClient() {
-  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY!;
+  const supabaseSecretKey = serverEnv.SUPABASE_SECRET_KEY;
   
   return createClient<Database>(supabaseUrl, supabaseSecretKey, {
     auth: {

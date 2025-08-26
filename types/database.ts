@@ -1,3 +1,6 @@
+// Type for PostgreSQL DECIMAL fields that are returned as strings to preserve precision
+export type DecimalString = string;
+
 export interface Database {
   public: {
     Tables: {
@@ -30,8 +33,8 @@ export interface Database {
           id: string;
           portfolio_id: string;
           ticker: string;
-          shares: number;
-          entry_price: number;
+          shares: DecimalString;
+          entry_price: DecimalString;
           thesis: string | null;
           theme: string | null;
           created_at: string;
@@ -41,8 +44,8 @@ export interface Database {
           id?: string;
           portfolio_id: string;
           ticker: string;
-          shares: number;
-          entry_price: number;
+          shares: DecimalString;
+          entry_price: DecimalString;
           thesis?: string | null;
           theme?: string | null;
           created_at?: string;
@@ -52,8 +55,8 @@ export interface Database {
           id?: string;
           portfolio_id?: string;
           ticker?: string;
-          shares?: number;
-          entry_price?: number;
+          shares?: DecimalString;
+          entry_price?: DecimalString;
           thesis?: string | null;
           theme?: string | null;
           created_at?: string;
@@ -270,3 +273,36 @@ export interface PortfolioWithMetrics extends Portfolio {
   total_return_percent?: number;
   positions?: PositionWithMetrics[];
 }
+
+// Helper parsers for converting DecimalString to number for calculations
+export const parseDecimal = (value: DecimalString): number => {
+  return Number(value);
+};
+
+// Convenience parsers for position fields
+export const parseShares = (position: Position): number => {
+  return Number(position.shares);
+};
+
+export const parseEntryPrice = (position: Position): number => {
+  return Number(position.entry_price);
+};
+
+// Helper to calculate market value
+export const calculateMarketValue = (
+  position: Position,
+  currentPrice: number
+): number => {
+  const sharesNum = parseShares(position);
+  return sharesNum * currentPrice;
+};
+
+// Helper to calculate unrealized P&L
+export const calculateUnrealizedPnL = (
+  position: Position,
+  currentPrice: number
+): number => {
+  const sharesNum = parseShares(position);
+  const entryNum = parseEntryPrice(position);
+  return sharesNum * (currentPrice - entryNum);
+};
