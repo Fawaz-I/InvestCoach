@@ -1,16 +1,8 @@
 import { serverEnv } from '../env';
+import { finnhubLimiter, alphaLimiter } from './rate-limit';
+import { httpGet } from './_http';
 
-interface QuoteData {
-  symbol: string;
-  price: number;
-  open: number;
-  high: number;
-  low: number;
-  prevClose: number;
-  volume: number;
-  timestamp: number;
-  source: 'finnhub' | 'alphavantage';
-}
+import type { QuoteResponse as QuoteData } from '../../types/api';
 
 interface FinnhubQuoteResponse {
   c: number; // current price
@@ -78,9 +70,14 @@ class QuoteCache {
 const quoteCache = new QuoteCache();
 
 export async function getQuoteFromFinnhub(symbol: string): Promise<QuoteData> {
+  // Check provider rate limit
+  if (!finnhubLimiter.consumeToken('finnhub')) {
+    throw new Error('FINNHUB_RATE_LIMIT: Provider rate limit exceeded');
+  }
+
   const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${serverEnv.FINNHUB_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await httpGet(url);
 
   if (!response.ok) {
     throw new Error(
@@ -111,9 +108,14 @@ export async function getQuoteFromFinnhub(symbol: string): Promise<QuoteData> {
 export async function getQuoteFromAlphaVantage(
   symbol: string
 ): Promise<QuoteData> {
+  // Check provider rate limit
+  if (!alphaLimiter.consumeToken('alphavantage')) {
+    throw new Error('ALPHA_RATE_LIMIT: Provider rate limit exceeded');
+  }
+
   const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${serverEnv.ALPHA_VANTAGE_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await httpGet(url);
 
   if (!response.ok) {
     throw new Error(
@@ -121,7 +123,16 @@ export async function getQuoteFromAlphaVantage(
     );
   }
 
-  const data: AlphaVantageQuoteResponse = await response.json();
+  const data: any = await response.json();
+
+  // Check for Alpha Vantage specific error/rate limit responses
+  if (data.Note) {
+    throw new Error(`ALPHA_RATE_LIMIT: ${data.Note}`);
+  }
+
+  if (data['Error Message']) {
+    throw new Error(`ALPHA_ERROR: ${data['Error Message']}`);
+  }
 
   if (!data['Global Quote'] || !data['Global Quote']['01. symbol']) {
     throw new Error(`Invalid symbol or no data available: ${symbol}`);

@@ -24,6 +24,9 @@ export class RateLimiter {
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
     }, 5 * 60 * 1000);
+    
+    // Prevent keeping the process alive in serverless environments
+    this.cleanupInterval.unref?.();
   }
 
   private cleanup(): void {
@@ -94,10 +97,31 @@ export class RateLimiter {
   }
 }
 
+// Singleton guard to prevent multiple instances in serverless/hot-reload environments
+const globalRateLimiterRegistry = globalThis as unknown as {
+  globalRateLimiter?: RateLimiter;
+  finnhubLimiter?: RateLimiter;
+  alphaLimiter?: RateLimiter;
+};
+
 // Global rate limiter instance
-export const globalRateLimiter = new RateLimiter({
-  requestsPerMinute: parseInt(
-    process.env.RATE_LIMIT_REQUESTS_PER_MINUTE || '30'
-  ),
-  burstCapacity: parseInt(process.env.RATE_LIMIT_BURST_CAPACITY || '60'),
-});
+export const globalRateLimiter = globalRateLimiterRegistry.globalRateLimiter ??
+  (globalRateLimiterRegistry.globalRateLimiter = new RateLimiter({
+    requestsPerMinute: parseInt(
+      process.env.RATE_LIMIT_REQUESTS_PER_MINUTE || '30'
+    ),
+    burstCapacity: parseInt(process.env.RATE_LIMIT_BURST_CAPACITY || '60'),
+  }));
+
+// Provider-specific rate limiters to prevent quota exhaustion
+export const finnhubLimiter = globalRateLimiterRegistry.finnhubLimiter ??
+  (globalRateLimiterRegistry.finnhubLimiter = new RateLimiter({
+    requestsPerMinute: 60, // 60 requests per minute for Finnhub
+    burstCapacity: 60,
+  }));
+
+export const alphaLimiter = globalRateLimiterRegistry.alphaLimiter ??
+  (globalRateLimiterRegistry.alphaLimiter = new RateLimiter({
+    requestsPerMinute: 5, // 5 requests per minute for Alpha Vantage (free tier)
+    burstCapacity: 5,
+  }));

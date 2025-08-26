@@ -6,8 +6,11 @@ import { globalRateLimiter } from '../services/rate-limit';
 const symbolSchema = z
   .string()
   .min(1, 'Symbol is required')
-  .max(5, 'Symbol must be 5 characters or less')
-  .regex(/^[A-Z]+$/, 'Symbol must contain only uppercase letters')
+  .max(7, 'Symbol must be 7 characters or less')
+  .regex(
+    /^[A-Z0-9.-]+$/,
+    'Symbol must contain only uppercase letters, numbers, dots, and hyphens'
+  )
   .transform((str) => str.toUpperCase());
 
 export function validateSymbol(symbol: string): string {
@@ -47,7 +50,10 @@ export function createErrorResponse(
       error: message,
       timestamp: new Date().toISOString(),
     },
-    { status }
+    {
+      status,
+      headers: getCorsHeaders(),
+    }
   );
 }
 
@@ -55,7 +61,29 @@ export function createSuccessResponse<T>(
   data: T,
   status: number = 200
 ): NextResponse {
-  return NextResponse.json(data, { status });
+  return NextResponse.json(data, {
+    status,
+    headers: getCorsHeaders(),
+  });
+}
+
+export function createRateLimitResponse(
+  message: string,
+  retryAfterSeconds: number = 60
+): NextResponse {
+  return NextResponse.json(
+    {
+      error: message,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': retryAfterSeconds.toString(),
+        ...getCorsHeaders(),
+      },
+    }
+  );
 }
 
 // Rate limiting decorator/wrapper for API handlers
@@ -71,19 +99,11 @@ export function withRateLimit<T extends any[]>(
       ? keyGenerator(...args)
       : getClientIP(request);
 
-    // Check rate limit
-    if (!globalRateLimiter.checkLimit(rateLimitKey)) {
-      return createErrorResponse(
-        'Too many requests. Please try again later.',
-        429
-      );
-    }
-
-    // Consume a token
+    // Check rate limit and consume token in one operation
     if (!globalRateLimiter.consumeToken(rateLimitKey)) {
-      return createErrorResponse(
+      return createRateLimitResponse(
         'Too many requests. Please try again later.',
-        429
+        60
       );
     }
 
@@ -95,8 +115,20 @@ export function withRateLimit<T extends any[]>(
 
       // Return appropriate error response
       if (error instanceof Error) {
-        if (error.message.includes('Invalid symbol')) {
+        if (error.message.includes('Missing required query parameter')) {
           return createErrorResponse(error.message, 400);
+        }
+        if (
+          error.message.includes('Invalid symbol') ||
+          error.message.startsWith('ALPHA_ERROR:')
+        ) {
+          return createErrorResponse(error.message, 400);
+        }
+        if (
+          error.message.startsWith('ALPHA_RATE_LIMIT:') ||
+          error.message.startsWith('FINNHUB_RATE_LIMIT:')
+        ) {
+          return createRateLimitResponse(error.message, 60);
         }
         if (
           error.message.includes('not found') ||

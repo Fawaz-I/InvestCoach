@@ -1,11 +1,6 @@
 import { serverEnv } from '../env';
-
-interface EarningsData {
-  symbol: string;
-  earningsDate: string; // ISO date string
-  hour?: 'bmo' | 'amc' | 'dmh'; // before market open, after market close, during market hours
-  source: 'finnhub';
-}
+import { httpGet } from './_http';
+import type { EarningsResponse as EarningsData } from '../../types/api';
 
 interface FinnhubEarningsCalendarResponse {
   earningsCalendar: Array<{
@@ -89,7 +84,7 @@ export async function getEarningsFromFinnhub(
 
   const url = `https://finnhub.io/api/v1/calendar/earnings?from=${fromDate}&to=${toDate}&token=${serverEnv.FINNHUB_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await httpGet(url);
 
   if (!response.ok) {
     throw new Error(

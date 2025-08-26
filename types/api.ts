@@ -56,8 +56,11 @@ export const ApiErrorSchema = z.object({
 export const SymbolSchema = z
   .string()
   .min(1, 'Symbol is required')
-  .max(5, 'Symbol must be 5 characters or less')
-  .regex(/^[A-Z]+$/, 'Symbol must contain only uppercase letters')
+  .max(7, 'Symbol must be 7 characters or less')
+  .regex(
+    /^[A-Z0-9.-]+$/,
+    'Symbol must contain only uppercase letters, numbers, dots, and hyphens'
+  )
   .transform((str) => str.toUpperCase());
 
 // API Request Query Parameters

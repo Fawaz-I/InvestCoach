@@ -13,7 +13,7 @@ import type { QuoteResponse } from '../../../types/api';
 async function handleQuoteRequest(request: NextRequest): Promise<NextResponse> {
   try {
     // Extract and validate symbol parameter
-    const symbolParam = getQueryParam(request, 'symbol', true);
+    const symbolParam = getQueryParam(request, 'symbol', false);
     if (!symbolParam) {
       return createErrorResponse('Symbol parameter is required', 400);
     }
